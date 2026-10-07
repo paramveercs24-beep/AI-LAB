@@ -1,0 +1,98 @@
+import heapq
+
+GOAL = (1, 2, 3, 4, 5, 6, 7, 8, 0)
+
+def heuristic(state):
+    return sum(1 for i in range(9)
+               if state[i] != 0 and state[i] != GOAL[i])
+
+def successors(state):
+    result = []
+    zero = state.index(0)
+    row, col = divmod(zero, 3)
+
+    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        r, c = row + dr, col + dc
+
+        if 0 <= r < 3 and 0 <= c < 3:
+            new_zero = r * 3 + c
+            new_state = list(state)
+            new_state[zero], new_state[new_zero] = \
+                new_state[new_zero], new_state[zero]
+            result.append(tuple(new_state))
+
+    return result
+
+def print_state(state):
+    for i in range(0, 9, 3):
+        print(state[i:i + 3])
+    print()
+
+def a_star(initial):
+    open_list = []
+    closed = set()
+    g = {initial: 0}
+    parent = {initial: None}
+
+    heapq.heappush(open_list, (heuristic(initial), initial))
+
+    while open_list:
+        f, n = heapq.heappop(open_list)
+
+        if n == GOAL:
+            path = []
+            while n is not None:
+                path.append(n)
+                n = parent[n]
+            return path[::-1]
+
+        if n in closed:
+            continue
+
+        closed.add(n)
+
+        for s in successors(n):
+            new_g = g[n] + 1
+
+            if s not in g or new_g < g[s]:
+                g[s] = new_g
+                parent[s] = n
+                f = new_g + heuristic(s)
+                heapq.heappush(open_list, (f, s))
+
+    return None
+
+initial = (1, 2, 3,
+           4, 0, 6,
+           7, 5, 8)
+
+solution = a_star(initial)
+
+if solution:
+    print("Solution Found")
+    print("Moves:", len(solution) - 1)
+
+    for i, state in enumerate(solution):
+        print("Step", i)
+        print_state(state)
+else:
+    print("Failure")
+
+
+OUTPUT:
+Solution Found
+Moves: 2
+Step 0
+(1, 2, 3)
+(4, 0, 6)
+(7, 5, 8)
+
+Step 1
+(1, 2, 3)
+(4, 5, 6)
+(7, 0, 8)
+
+Step 2
+(1, 2, 3)
+(4, 5, 6)
+(7, 8, 0)
