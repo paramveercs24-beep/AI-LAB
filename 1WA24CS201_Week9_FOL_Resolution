@@ -1,0 +1,165 @@
+def unify(a, b, subst):
+    if a == b:
+        return subst
+
+    if a.startswith('?'):
+        subst[a] = b
+        return subst
+
+    if b.startswith('?'):
+        subst[b] = a
+        return subst
+
+    return None
+
+
+def substitute(literal, subst):
+    sign, predicate, args = literal
+    new_args = []
+
+    for arg in args:
+        while arg in subst:
+            arg = subst[arg]
+        new_args.append(arg)
+
+    return (sign, predicate, tuple(new_args))
+
+
+def resolve(c1, c2):
+    for i, l1 in enumerate(c1):
+        for j, l2 in enumerate(c2):
+
+            if l1[0] != l2[0] and l1[1] == l2[1]:
+
+                if len(l1[2]) != len(l2[2]):
+                    continue
+
+                subst = {}
+                valid = True
+
+                for a, b in zip(l1[2], l2[2]):
+                    subst = unify(a, b, subst)
+
+                    if subst is None:
+                        valid = False
+                        break
+
+                if valid:
+                    new_clause = (
+                        c1[:i] + c1[i+1:] +
+                        c2[:j] + c2[j+1:]
+                    )
+
+                    return [
+                        substitute(x, subst)
+                        for x in new_clause
+                    ]
+
+    return None
+
+
+def resolution(KB):
+    clauses = list(KB)
+    seen = {str(c) for c in clauses}
+
+    while True:
+        new_clauses = []
+
+        for i in range(len(clauses)):
+            for j in range(i + 1, len(clauses)):
+
+                result = resolve(clauses[i], clauses[j])
+
+                if result is not None:
+
+                    if len(result) == 0:
+                        print("\nEmpty clause obtained!")
+                        print("QUERY IS PROVED.")
+                        return
+
+                    key = str(result)
+
+                    if key not in seen:
+                        seen.add(key)
+                        new_clauses.append(result)
+
+        if not new_clauses:
+            print("\nEmpty clause not obtained.")
+            print("Query could not be proved.")
+            return
+
+        clauses.extend(new_clauses)
+
+
+# Read Knowledge Base
+print("FIRST ORDER LOGIC - RESOLUTION")
+print("--------------------------------")
+
+n = int(input("Enter number of KB clauses: "))
+
+KB = []
+
+print("\nEnter each clause.")
+print("Format: +Predicate,arg1,arg2")
+print("        -Predicate,arg1,arg2")
+print("Use ?x, ?y for variables.")
+
+for i in range(n):
+    print(f"\nClause {i+1}")
+    count = int(input("Number of literals: "))
+
+    clause = []
+
+    for j in range(count):
+        data = input("Enter literal: ").strip().split(',')
+
+        sign = data[0][0] == '+'
+        predicate = data[0][1:]
+        args = tuple(data[1:])
+
+        clause.append((sign, predicate, args))
+
+    KB.append(clause)
+
+
+# Read Query
+print("\nEnter query in positive form.")
+
+data = input("Query (Example: Mortal,Socrates): ").strip().split(',')
+
+predicate = data[0]
+args = tuple(data[1:])
+
+# Negate query and add to KB
+KB.append([(False, predicate, args)])
+
+# Apply Resolution
+print("\nApplying Resolution...")
+resolution(KB)
+
+OUTPUT:
+FIRST ORDER LOGIC - RESOLUTION
+
+Enter number of KB clauses: 2
+
+Enter each clause.
+Format: +Predicate, arg1, arg2
+-Predicate, arg1, arg2
+Use ?x, ?y for variables.
+
+Clause 1
+Number of literals: 2
+Enter literal: -Human,?x
+Enter literal: +Mortal,?x
+
+Clause 2
+Number of literals: 1
+Enter literal: +Human,Socrates
+
+Enter query in positive form.
+Query (Example: Mortal, Socrates): Mortal,Socrates
+
+Applying Resolution ...
+
+Empty clause obtained!
+QUERY IS PROVED.
